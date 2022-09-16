@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-let peerConnection = null;
+var peerConnection = null;
 let localStream = null;
 
 function WebRtc({ socket }) {
@@ -8,6 +8,7 @@ function WebRtc({ socket }) {
   const [remoteOffer, setRemoteOffer] = useState(null);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const roomId = document.location.pathname.substring(1);
   let RemoteAnswer = null;
   const servers = {
     iceServers: [
@@ -21,8 +22,9 @@ function WebRtc({ socket }) {
   };
 
   useEffect(() => {
+    socket.emit("joinRoom", roomId);
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia({ video: true, audio: false })
       .then((stream) => {
         localStream = stream;
         document.getElementById("myVideo").srcObject = stream;
@@ -58,7 +60,7 @@ function WebRtc({ socket }) {
 
     peerConnection.onicecandidate = async (event) => {
       if (event.candidate) {
-        socket.emit("iceCandidate", event.candidate);
+        socket.emit("iceCandidate", { payload: event.candidate, roomId });
         socket.on("setIceCandidate", (args) => {
           addIceCandidate(args);
         });
@@ -72,7 +74,7 @@ function WebRtc({ socket }) {
     let offer = await peerConnection.createOffer();
     peerConnection.setLocalDescription(offer).then(() => {
       setIsCallingPerson(true);
-      socket.emit("offer", offer);
+      socket.emit("offer", { payload: offer, roomId });
       socket.on("setRemoteAnswer", (args) => {
         addAnswer(args);
       });
@@ -85,7 +87,7 @@ function WebRtc({ socket }) {
     await peerConnection.setRemoteDescription(offer);
     let answer = await peerConnection.createAnswer();
     peerConnection.setLocalDescription(answer).then(() => {
-      socket.emit("answer", answer);
+      socket.emit("answer", { payload: answer, roomId });
     });
   };
 
@@ -119,6 +121,7 @@ function WebRtc({ socket }) {
 
   const toogleVideo = (videoState) => {
     if (videoState) {
+      console.log(peerConnection);
       // navigator.mediaDevices
       //   .getUserMedia({ video: true, audio: false })
       //   .then((stream) => {
