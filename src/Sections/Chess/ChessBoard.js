@@ -1,55 +1,28 @@
 import React, { useEffect, useState } from "react";
+import getPiecePositions from "../../Helper/getPieceAvailablePositions";
+import iniitialPiecesPosition from "../../Helper/initialPiecesPosition";
 import piecesNames from "../../Helper/piecesNames";
 import "./ChessBoard.scss";
 
 function ChessBoard() {
   const column = ["a", "b", "c", "d", "e", "f", "g", "h"];
   const rows = [8, 7, 6, 5, 4, 3, 2, 1];
+  const myColor = "white";
   const [pickedPiece, setPickedPiece] = useState(null);
   const [cellPositions, setCellPositions] = useState({});
-  const [PiecesPositions, setPiecesPosition] = useState({
-    black: {
-      pawn1: { row: 2, col: "a" },
-      pawn2: { row: 2, col: "b" },
-      pawn3: { row: 2, col: "c" },
-      pawn4: { row: 2, col: "d" },
-      pawn5: { row: 2, col: "e" },
-      pawn6: { row: 2, col: "f" },
-      pawn7: { row: 2, col: "g" },
-      pawn8: { row: 2, col: "h" },
-      rook1: { row: 1, col: "a" },
-      rook2: { row: 1, col: "h" },
-      knight1: { row: 1, col: "b" },
-      knight2: { row: 1, col: "g" },
-      bishop1: { row: 1, col: "c" },
-      bishop2: { row: 1, col: "f" },
-      queen: { row: 1, col: "d" },
-      king: { row: 1, col: "e" },
-    },
-    white: {
-      pawn1: { row: 7, col: "a" },
-      pawn2: { row: 7, col: "b" },
-      pawn3: { row: 7, col: "c" },
-      pawn4: { row: 7, col: "d" },
-      pawn5: { row: 7, col: "e" },
-      pawn6: { row: 7, col: "f" },
-      pawn7: { row: 7, col: "g" },
-      pawn8: { row: 7, col: "h" },
-      rook1: { row: 8, col: "a" },
-      rook2: { row: 8, col: "h" },
-      knight1: { row: 8, col: "b" },
-      knight2: { row: 8, col: "g" },
-      bishop1: { row: 8, col: "c" },
-      bishop2: { row: 8, col: "f" },
-      queen: { row: 8, col: "d" },
-      king: { row: 8, col: "e" },
-    },
-  });
+  const [PiecesPositions, setPiecesPosition] = useState(
+    iniitialPiecesPosition(myColor)
+  );
   const [deadStack, setDeadStack] = useState({
     white: [],
     black: [],
   });
   const [turn, setTurn] = useState("white");
+  const [possibleMoves, setPossibleMoves] = useState(null);
+
+  const changeTurn = () => {
+    setTurn(turn === "white" ? "white" : "black");
+  };
 
   useEffect(() => {
     let _cellPositions = {};
@@ -68,33 +41,16 @@ function ChessBoard() {
     setCellPositions({ ..._cellPositions });
   }, [PiecesPositions]);
 
-  const handelCellClick = (color = null, piece = null, row, col) => {
-    if (!pickedPiece && color && piece && turn === color) {
-      setPickedPiece({ color, piece, row, col });
-    } else if (pickedPiece && color && piece) {
-      if (pickedPiece.color === color) {
-        setPickedPiece({ color, piece, row, col });
-      } else {
-        const { [piece]: removedPiece, ...remainingPieces } =
-          PiecesPositions[color];
-        setPiecesPosition({
-          ...PiecesPositions,
-          [pickedPiece.color]: {
-            ...PiecesPositions[pickedPiece.color],
-            [pickedPiece.piece]: { row, col },
-          },
-          [color]: {
-            ...remainingPieces,
-          },
-        });
-        setPickedPiece(null);
-        setDeadStack({
-          ...deadStack,
-          [color]: [...deadStack[color], cellPositions[row + col]],
-        });
-        setTurn(turn === "white" ? "black" : "white");
-      }
-    } else if (pickedPiece && !color && !piece) {
+  const pickPiece = (color, piece, row, col) => {
+    setPickedPiece({ color, piece, row, col });
+    setPossibleMoves(getPiecePositions(piece, row, col, cellPositions));
+  };
+
+  const movePiecetoEmptyCell = (row, col) => {
+    if (
+      possibleMoves?.some((data) => data.row === row && data.col === col) ||
+      !possibleMoves
+    ) {
       setPiecesPosition({
         ...PiecesPositions,
         [pickedPiece.color]: {
@@ -103,7 +59,49 @@ function ChessBoard() {
         },
       });
       setPickedPiece(null);
-      setTurn(turn === "white" ? "black" : "white");
+      setPossibleMoves(null);
+      changeTurn();
+    }
+  };
+
+  const cutOpponentPiece = (color, piece, row, col) => {
+    if (
+      possibleMoves?.some((data) => data.row === row && data.col === col) ||
+      !possibleMoves
+    ) {
+      const { [piece]: removedPiece, ...remainingPieces } =
+        PiecesPositions[color];
+      setPiecesPosition({
+        ...PiecesPositions,
+        [pickedPiece.color]: {
+          ...PiecesPositions[pickedPiece.color],
+          [pickedPiece.piece]: { row, col },
+        },
+        [color]: {
+          ...remainingPieces,
+        },
+      });
+      setPickedPiece(null);
+      setDeadStack({
+        ...deadStack,
+        [color]: [...deadStack[color], cellPositions[row + col]],
+      });
+      setPossibleMoves(null);
+      changeTurn();
+    }
+  };
+
+  const handelCellClick = (color = null, piece = null, row, col) => {
+    if (!pickedPiece && color && piece && turn === color) {
+      pickPiece(color, piece, row, col);
+    } else if (pickedPiece && color && piece) {
+      if (pickedPiece.color === color) {
+        pickPiece(color, piece, row, col);
+      } else {
+        cutOpponentPiece(color, piece, row, col);
+      }
+    } else if (pickedPiece && !color && !piece) {
+      movePiecetoEmptyCell(row, col);
     }
   };
 
@@ -123,13 +121,24 @@ function ChessBoard() {
               <div
                 className={`cell ${
                   (rowIndex + colIndex) % 2 === 0 ? "white" : "black"
+                } ${
+                  possibleMoves?.some(
+                    (data) => data.row === row && data.col === col
+                  ) &&
+                  !cellPositions[row + col] &&
+                  "possibleMove"
                 }`}
                 id={col + row}
                 style={{
                   boxShadow:
-                    pickedPiece?.row === row &&
-                    pickedPiece?.col === col &&
-                    "inset 0px 0px 20px 20px #0080009c",
+                    pickedPiece?.row === row && pickedPiece?.col === col
+                      ? "inset 0px 0px 20px 20px #0080009c"
+                      : cellPositions[row + col] &&
+                        possibleMoves?.some(
+                          (data) => data.row === row && data.col === col
+                        ) &&
+                        cellPositions[row + col]?.color !== pickedPiece.color &&
+                        "#f73d3d73 0px 0px 20px 20px inset",
                 }}
                 onClick={() =>
                   handelCellClick(
