@@ -1,6 +1,7 @@
 import "./App.css";
-import WebRtc from "./Pages/WebRtc";
+// import WebRtc from "./Sections/WebRtc";
 import { useEffect } from "react";
+import ChessBoard from "./Sections/Chess/ChessBoard";
 
 function App({ socket }) {
   useEffect(() => {
@@ -17,7 +18,8 @@ function App({ socket }) {
   }, []);
   return (
     <div className="App">
-      <WebRtc socket={socket} />
+      {/* <WebRtc socket={socket} /> */}
+      <ChessBoard />
     </div>
   );
 }

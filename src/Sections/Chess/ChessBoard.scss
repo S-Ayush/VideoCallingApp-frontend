@@ -1,0 +1,46 @@
+.chessArea {
+  height: 640px;
+  display: flex;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  .WhiteDeadStack,
+  .blackDeadStack {
+    width: 60px;
+    height: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    .deadPeace {
+      width: 100%;
+      height: 40px;
+      img {
+        height: 80%;
+      }
+    }
+  }
+  .Board {
+    width: 640px;
+    height: 640px;
+    border: 1px solid grey;
+    display: flex;
+    flex-wrap: wrap;
+    .cell {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      &.black {
+        background-color: #00000069;
+      }
+      &.white {
+        background-color: white;
+      }
+      img {
+        width: 57%;
+      }
+    }
+  }
+}
